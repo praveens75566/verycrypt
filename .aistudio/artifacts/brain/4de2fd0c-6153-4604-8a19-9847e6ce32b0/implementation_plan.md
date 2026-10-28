@@ -1,94 +1,76 @@
-# Professional GitHub Actions CI/CD Pipeline Plan
+# VeriCrypt Documentation Architecture Plan (README.md)
 
-An enterprise-grade GitHub Actions CI/CD architecture to automate validation, testing, R8 release APK & AAB compilation, secure keystore signing, and automatic GitHub Releases with cryptographic checksums.
+A plan for authoring a production-grade, minimalist, noise-free, and visually striking `README.md` that perfectly represents the VeriCrypt codebase, cryptographic standards, architectural design, and GitHub CI/CD automation.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> **Production CI/CD Standards**: The pipeline adheres to GitHub Actions security best practices: least-privilege permissions, dependency caching via `gradle/actions/setup-gradle@v4`, dual signing pathways (signed release when GitHub Secrets are configured, with graceful fallback to unsigned artifacts), and automated checksum verification.
+> **Minimalist, Focused, Noise-Free Design**: Avoid verbose fluff, AI boilerplate, or redundant marketing jargon. Every section will be dense with actionable engineering details: exact cryptographic standards (NIST FIPS, RFCs), clear component tables, ASCII architecture diagrams, size benchmark comparisons, and reproduction build steps.
 
-- **Trigger Strategy**:
-  - `push` to `main` and `master` branches.
-  - `pull_request` targeting `main` and `master`.
-  - `tags: ['v*']` for triggering automated production GitHub Releases.
-  - `workflow_dispatch` for manual runs from the GitHub UI with customizable build options.
-- **Signing Key Handling via GitHub Secrets**:
-  - `KEYSTORE_BASE64`: Base64-encoded JKS/Keystore.
-  - `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`: Credentials injected safely into build environment variables (never committed to repository).
-  - Graceful fallback: If secrets are omitted in new forks, CI continues building unsigned release APKs and App Bundles without failing.
-- **Artifacts & Distribution**:
-  - **Pull Requests & Commits**: Uploads signed/unsigned release APK (`app-release.apk`), App Bundle (`app-release.aab`), and test reports as workflow artifacts with a 30-day retention.
-  - **Git Tag Releases**: Automatically publishes a GitHub Release with changelog, attaching the release APK, AAB, and calculated SHA-256 and SHA3-512 checksum files.
+- **Visual Style**: Clean minimal badges (Kotlin, Compose, Android, NIST FIPS 202, MIT/Apache License), high-contrast ASCII layout diagrams, structured specification tables, and code snippets with syntax highlighting.
+- **Audience Balance**: Detailed enough for security engineers and developers auditing cryptographic primitives, yet intuitive for users seeking offline file encryption and integrity verification workflows.
 
 ---
 
-## 1. CI/CD Workflow Architecture
+## 1. Document Structure & Content Hierarchy
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        GitHub Actions Triggers                         │
-│            push (main)  │  pull_request  │  tags ('v*')  │  dispatch   │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                    Job 1: Validate & Run Unit Tests                    │
-│  • Ubuntu-latest runner with Temurin JDK 17                            │
-│  • Gradle dependency caching via `setup-gradle@v4`                     │
-│  • Execute: `./gradlew :app:testDebugUnitTest`                         │
-│  • Verifies NIST FIPS 202 SHA3-512, SHA-512, SHA-256, AES-256-GCM      │
-│  • Upload HTML test reports on failure or success                      │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │
-                                    ▼ (passes)
-┌────────────────────────────────────────────────────────────────────────┐
-│                  Job 2: Build & Package Release APK / AAB              │
-│  • Decode Base64 Keystore from Secrets (if configured)                 │
-│  • Execute: `./gradlew :app:assembleRelease :app:bundleRelease`        │
-│  • Run R8 bytecode optimization, shrink resources, strip unused locales │
-│  • Calculate SHA-256 and SHA3-512 checksums for artifacts              │
-│  • Upload release artifacts (`app-release.apk`, `app-release.aab`)     │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │
-                                    ▼ (tag push only)
-┌────────────────────────────────────────────────────────────────────────┐
-│                     Job 3: Publish GitHub Release                      │
-│  • Triggered on `v*` tags (e.g. `v1.0.0`)                              │
-│  • Create official GitHub Release with auto-generated release notes    │
-│  • Attach `VeriCrypt-vX.X.X.apk`, `.aab`, and `checksums.txt`          │
+│                        README.md Layout Schema                         │
+├────────────────────────────────────────────────────────────────────────┤
+│ 1. Hero Header & Mission Statement                                     │
+│    • Project title, description, and status badges                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ 2. Core Cryptographic Capabilities Matrix                              │
+│    • Algorithm, Standard/RFC, Key/Digest Size, Hardware Acceleration    │
+├────────────────────────────────────────────────────────────────────────┤
+│ 3. Architecture & Security Model                                       │
+│    • ASCII Engine Flow: UI -> ViewModel -> Engine -> Keystore / Room   │
+│    • Zero-knowledge local-first storage model                          │
+├────────────────────────────────────────────────────────────────────────┤
+│ 4. Key Workspaces & UI Modules                                         │
+│    • Hash Studio (SHA-256, SHA-512, SHA3-512, ZIP Dedup)              │
+│    • Cipher Lab (AES-256-GCM, XChaCha20-Poly1305, RSA-4096)           │
+│    • Signature Studio (ECDSA P-384, RSA-PSS)                           │
+│    • Vault & Secret Notes (Biometric, PIN, Auto-shredding clipboard)   │
+│    • Entropy & KDF Sandbox (Argon2id, PBKDF2, HKDF, CSPRNG)            │
+│    • Security Hub & Hardware Diagnostics                               │
+├────────────────────────────────────────────────────────────────────────┤
+│ 5. Performance & APK Footprint Benchmark                               │
+│    • Optimization table: 19.4 MB -> 2.1 MB (Release) / 5.1 MB (Debug)  │
+│    • Techniques: R8 Full Mode, System Typography, Locale Filtering     │
+├────────────────────────────────────────────────────────────────────────┤
+│ 6. GitHub CI/CD Pipeline & Automated Releases                          │
+│    • Workflow overview, secrets guide, and tag-triggered distribution  │
+├────────────────────────────────────────────────────────────────────────┤
+│ 7. Build, Test & Development Setup                                     │
+│    • Gradle build commands, Robolectric test suite execution           │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Implementation Deliverables
+## 2. Technical Accuracy & Details to Include
 
-### 1. GitHub Actions Workflow Configuration
-- **File**: `.github/workflows/android-ci.yml`
-  - Multi-job pipeline: `test`, `build-release`, and conditional `publish-release`.
-  - Uses `actions/checkout@v4`, `actions/setup-java@v4`, `gradle/actions/setup-gradle@v4`, and `softprops/action-gh-release@v2`.
-  - Step to compute cryptographic checksums:
-    ```bash
-    sha256sum app-release.apk > checksums.txt
-    ```
-
-### 2. Gradle Wrapper Generation & Headless CI Compatibility
-- Ensure standard `gradlew` script and `gradle/wrapper/gradle-wrapper.jar` are committed so GitHub runner can execute `./gradlew` without needing global Gradle installation.
-
-### 3. Graceful Release Signing Configuration in Gradle
-- **File**: `app/build.gradle.kts`
-  - Ensure release build signing checks if the keystore file exists before binding the signing configuration, ensuring local and forked CI builds succeed even before secrets are provisioned.
-
-### 4. Setup Guide & Secrets Documentation
-- **File**: `.github/CI_CD_GUIDE.md`
-  - Documentation explaining how to generate a release keystore, encode to Base64, and configure GitHub Secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`).
+1. **Cryptographic Standards**:
+   - **SHA3-512**: NIST FIPS 202 Keccak-p[1600, 24] sponge with hardware fallback.
+   - **SHA-256 / SHA-512**: NIST FIPS 180-4 secure hash standards.
+   - **AES-256-GCM**: NIST SP 800-38D authenticated encryption.
+   - **XChaCha20-Poly1305**: RFC 8439 with extended 192-bit nonce.
+   - **ECDSA**: FIPS 186-4 (P-256, P-384 curves).
+   - **Argon2id & PBKDF2**: RFC 9106 and RFC 8018 password-based key derivation.
+2. **Local Security Boundaries**:
+   - Android Keystore Hardware Security Module (HSM / StrongBox).
+   - BiometricPrompt with cryptographic cipher binding.
+   - In-memory clipboard timer with auto-clearing sensitive data.
+3. **Build & CI/CD Documentation**:
+   - Command reference for `./gradlew assembleRelease` and `./gradlew testDebugUnitTest`.
+   - Setup instructions for `RELEASE_KEYSTORE_BASE64` GitHub Secrets.
 
 ---
 
 ## 3. Step-by-Step Execution Plan
 
-1. **Gradle Build Update**: Make release signing in `app/build.gradle.kts` conditional on file existence so headless builds without secrets produce unsigned APKs cleanly.
-2. **Generate Gradle Wrapper**: Execute `gradle wrapper` to generate portable `gradlew` and `gradle-wrapper.jar`.
-3. **Create Workflow File**: Write `.github/workflows/android-ci.yml` with test, build, artifact upload, and tag release steps.
-4. **Create CI/CD Documentation**: Add `.github/CI_CD_GUIDE.md` detailing secrets configuration and release triggering.
-5. **Verification**: Run `compile_applet` and local test tasks to ensure compatibility with Gradle wrapper.
+1. **Audit & Verification**: Double-check all active package names, file locations, test classes, and Gradle configurations.
+2. **Author `README.md`**: Create `/README.md` with complete, noise-free formatting, badges, tables, and architectural diagrams.
+3. **Validate Consistency**: Verify file references in `README.md` against the repository structure.
