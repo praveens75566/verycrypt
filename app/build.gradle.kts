@@ -92,6 +92,13 @@ android {
       isReturnDefaultValues = true
       all {
         it.maxHeapSize = "1536m"
+        it.testLogging {
+          events("failed", "skipped", "standardError")
+          exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+          showExceptions = true
+          showCauses = true
+          showStackTraces = true
+        }
       }
     }
   }
