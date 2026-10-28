@@ -1,84 +1,94 @@
-# Deep Professional Android APK Minimalist Optimization Plan
+# Professional GitHub Actions CI/CD Pipeline Plan
 
-A senior Android performance engineering plan to systematically audit and compress every layer of the VeriCrypt APK (DEX, Resources, Assets, Packaging, and Reflection boundaries) to achieve the most minimalistic footprint possible while strictly preserving 100% of cryptographic, vault, and UI capabilities.
+An enterprise-grade GitHub Actions CI/CD architecture to automate validation, testing, R8 release APK & AAB compilation, secure keystore signing, and automatic GitHub Releases with cryptographic checksums.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> **Strict Zero-Feature-Loss Contract**: Every single cryptographic primitive (SHA-256, SHA-512, NIST FIPS 202 SHA3-512, AES-256-GCM, ChaCha20-Poly1305, RSA-4096, ECDSA P-384, Argon2id, PBKDF2), the Encrypted Vault, Hardware Keystore, Diagnostics, File Hash streaming, and Markdown previewer remain 100% functional. Optimization will be conducted with surgical precision on bytecode, dead-code elimination, and resource packaging.
+> **Production CI/CD Standards**: The pipeline adheres to GitHub Actions security best practices: least-privilege permissions, dependency caching via `gradle/actions/setup-gradle@v4`, dual signing pathways (signed release when GitHub Secrets are configured, with graceful fallback to unsigned artifacts), and automated checksum verification.
 
-### Core Architectural Optimizations
-1. **DEX Bytecode & R8 Full Mode (`android.enableR8.fullMode=true`)**:
-   - Enable R8 full mode to activate aggressive inter-procedural inlining, dead-branch elimination, class merging, and method devirtualization across library boundaries.
-   - Enable `-allowaccessmodification` in `proguard-rules.pro` to widen access permissions, allowing R8 to inline private/package-private utility methods directly into call sites.
-   - Eliminate over-broad `-keep class com.example.ui.** { *; }` rules that previously forced R8 to keep thousands of unused Compose synthetic methods and classes. Replace with targeted ProGuard preservation only for Room entities, biometric callbacks, and Keystore reflection boundaries.
-   - Enable `-repackageclasses 'a'` to flatten internal class descriptors and minimize DEX string pool overhead.
-2. **Resource Table Stripping (`resourceConfigurations += listOf("en")`)**:
-   - External dependencies (`androidx.appcompat`, `material3`, `androidx.core`, `biometric`) bundle localized string XMLs across 80+ locales. Restricting packaging to `"en"` eliminates thousands of unused localized string entries from `resources.arsc`.
-3. **Zero-Byte Native System Typography Migration**:
-   - Replace bundled font binaries (`jetbrains_mono.ttf` [57KB] and `plus_jakarta_sans.ttf` [29KB]) with Android's pre-installed `/system/fonts/` (`FontFamily.Monospace` and `FontFamily.SansSerif`).
-   - Retains crisp, pixel-perfect tabular alignment for 64-char (SHA-256) and 128-char (SHA-512 / SHA3-512) hex digests at zero APK storage cost.
-4. **APK Packaging Exclusions**:
-   - Exclude unnecessary `META-INF` files (`*.kotlin_module`, `*.version`, build metadata) from the final APK zip structure.
+- **Trigger Strategy**:
+  - `push` to `main` and `master` branches.
+  - `pull_request` targeting `main` and `master`.
+  - `tags: ['v*']` for triggering automated production GitHub Releases.
+  - `workflow_dispatch` for manual runs from the GitHub UI with customizable build options.
+- **Signing Key Handling via GitHub Secrets**:
+  - `KEYSTORE_BASE64`: Base64-encoded JKS/Keystore.
+  - `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`: Credentials injected safely into build environment variables (never committed to repository).
+  - Graceful fallback: If secrets are omitted in new forks, CI continues building unsigned release APKs and App Bundles without failing.
+- **Artifacts & Distribution**:
+  - **Pull Requests & Commits**: Uploads signed/unsigned release APK (`app-release.apk`), App Bundle (`app-release.aab`), and test reports as workflow artifacts with a 30-day retention.
+  - **Git Tag Releases**: Automatically publishes a GitHub Release with changelog, attaching the release APK, AAB, and calculated SHA-256 and SHA3-512 checksum files.
 
 ---
 
-## 1. Professional APK Audit: Layer-by-Layer Breakdown
+## 1. CI/CD Workflow Architecture
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        APK Footprint Layers                            │
-├───────────────────────┬──────────────────────┬─────────────────────────┤
-│ Component             │ Status Quo           │ Optimized State         │
-├───────────────────────┼──────────────────────┼─────────────────────────┤
-│ DEX Code (classes.dex)│ 1.8 MB (uncompressed)│ ~1.1 - 1.3 MB           │
-│                       │ Broad keep rules     │ R8 Full Mode + Inlining │
-├───────────────────────┼──────────────────────┼─────────────────────────┤
-│ Fonts (`res/font/`)   │ 86.8 KB (bundled TTF)│ 0 KB (System fonts)     │
-├───────────────────────┼──────────────────────┼─────────────────────────┤
-│ `resources.arsc`      │ 248.8 KB             │ ~110 - 130 KB           │
-│                       │ 80+ unused locales   │ Filtered: "en" only     │
-├───────────────────────┼──────────────────────┼─────────────────────────┤
-│ `META-INF/`           │ Kotlin modules, vers │ Stripped via packaging  │
-├───────────────────────┼──────────────────────┼─────────────────────────┤
-│ Net APK Compressed    │ ~2.3 MB              │ ~1.3 - 1.6 MB (MINIMAL) │
-└───────────────────────┴──────────────────────┴─────────────────────────┘
+│                        GitHub Actions Triggers                         │
+│            push (main)  │  pull_request  │  tags ('v*')  │  dispatch   │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                    Job 1: Validate & Run Unit Tests                    │
+│  • Ubuntu-latest runner with Temurin JDK 17                            │
+│  • Gradle dependency caching via `setup-gradle@v4`                     │
+│  • Execute: `./gradlew :app:testDebugUnitTest`                         │
+│  • Verifies NIST FIPS 202 SHA3-512, SHA-512, SHA-256, AES-256-GCM      │
+│  • Upload HTML test reports on failure or success                      │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼ (passes)
+┌────────────────────────────────────────────────────────────────────────┐
+│                  Job 2: Build & Package Release APK / AAB              │
+│  • Decode Base64 Keystore from Secrets (if configured)                 │
+│  • Execute: `./gradlew :app:assembleRelease :app:bundleRelease`        │
+│  • Run R8 bytecode optimization, shrink resources, strip unused locales │
+│  • Calculate SHA-256 and SHA3-512 checksums for artifacts              │
+│  • Upload release artifacts (`app-release.apk`, `app-release.aab`)     │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼ (tag push only)
+┌────────────────────────────────────────────────────────────────────────┐
+│                     Job 3: Publish GitHub Release                      │
+│  • Triggered on `v*` tags (e.g. `v1.0.0`)                              │
+│  • Create official GitHub Release with auto-generated release notes    │
+│  • Attach `VeriCrypt-vX.X.X.apk`, `.aab`, and `checksums.txt`          │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. In-Depth Technical Implementation Steps
+## 2. Implementation Deliverables
 
-### Step 1: Build Properties & R8 Configuration
-- File: `/gradle.properties`
-  - Add `android.enableR8.fullMode=true` to enable R8's strongest optimization engine.
-  - Retain worker and daemon tuning for container performance.
+### 1. GitHub Actions Workflow Configuration
+- **File**: `.github/workflows/android-ci.yml`
+  - Multi-job pipeline: `test`, `build-release`, and conditional `publish-release`.
+  - Uses `actions/checkout@v4`, `actions/setup-java@v4`, `gradle/actions/setup-gradle@v4`, and `softprops/action-gh-release@v2`.
+  - Step to compute cryptographic checksums:
+    ```bash
+    sha256sum app-release.apk > checksums.txt
+    ```
 
-### Step 2: ProGuard Rules Surgical Refinement
-- File: `/app/proguard-rules.pro`
-  - Add `-allowaccessmodification` for cross-package method inlining.
-  - Add `-repackageclasses 'com.example.min'` to compress package paths.
-  - Retain strictly required preservation rules:
-    - `@androidx.room.Entity` and `@androidx.room.Dao` implementations.
-    - Android framework entry points (`MainActivity`).
-    - Cryptographic keystore models.
-  - Remove blanket `-keep class com.example.ui.** { *; }` to permit R8 to prune unused Compose code.
+### 2. Gradle Wrapper Generation & Headless CI Compatibility
+- Ensure standard `gradlew` script and `gradle/wrapper/gradle-wrapper.jar` are committed so GitHub runner can execute `./gradlew` without needing global Gradle installation.
 
-### Step 3: Resource Configurations & Packaging Cleanup
-- File: `/app/build.gradle.kts`
-  - Add `resourceConfigurations += listOf("en")` to `defaultConfig`.
-  - Add packaging exclusions for `META-INF/*.kotlin_module` and `META-INF/services/*`.
+### 3. Graceful Release Signing Configuration in Gradle
+- **File**: `app/build.gradle.kts`
+  - Ensure release build signing checks if the keystore file exists before binding the signing configuration, ensuring local and forked CI builds succeed even before secrets are provisioned.
 
-### Step 4: System Typography Migration
-- File: `/app/src/main/java/com/example/ui/theme/Type.kt`
-  - Migrate `PlusJakartaSansFamily` to `FontFamily.SansSerif` (Android system Roboto / Noto Sans).
-  - Migrate `JetBrainsMonoFamily` to `FontFamily.Monospace` (Android system Roboto Mono / Droid Sans Mono).
-- Files to delete:
-  - `/app/src/main/res/font/jetbrains_mono.ttf`
-  - `/app/src/main/res/font/plus_jakarta_sans.ttf`
-  - `/app/src/main/res/font` directory.
+### 4. Setup Guide & Secrets Documentation
+- **File**: `.github/CI_CD_GUIDE.md`
+  - Documentation explaining how to generate a release keystore, encode to Base64, and configure GitHub Secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`).
 
-### Step 5: Verification & Quality Assurance
-- Run `gradle :app:testDebugUnitTest` to verify all cryptographic algorithms (NIST FIPS 202 SHA3-512, SHA-512, SHA-256, AES-256-GCM, ChaCha20-Poly1305, RSA, ECDSA) and Room persistence pass unit tests.
-- Run `compile_applet` to verify compilation and packaging.
-- Inspect the generated APK file size and content breakdown via `ls -lh` and `unzip -l`.
+---
+
+## 3. Step-by-Step Execution Plan
+
+1. **Gradle Build Update**: Make release signing in `app/build.gradle.kts` conditional on file existence so headless builds without secrets produce unsigned APKs cleanly.
+2. **Generate Gradle Wrapper**: Execute `gradle wrapper` to generate portable `gradlew` and `gradle-wrapper.jar`.
+3. **Create Workflow File**: Write `.github/workflows/android-ci.yml` with test, build, artifact upload, and tag release steps.
+4. **Create CI/CD Documentation**: Add `.github/CI_CD_GUIDE.md` detailing secrets configuration and release triggering.
+5. **Verification**: Run `compile_applet` and local test tasks to ensure compatibility with Gradle wrapper.
