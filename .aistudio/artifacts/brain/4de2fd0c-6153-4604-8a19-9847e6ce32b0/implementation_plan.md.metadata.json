@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan to decrease the APK size to within 10–20MB while preserving all security, vault, crypto, reader, and settings features.",
+  "updatedAt":  "2026-10-28T15:32:44.698238374Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

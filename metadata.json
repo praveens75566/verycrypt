@@ -1,0 +1,6 @@
+{
+  "name": "VeriCrypt",
+  "description": "Professional offline file security application with SHA-256 hashing, AES-256-GCM and XChaCha20-Poly1305 AEAD encryption, ECDSA signatures, and biometric vault.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
