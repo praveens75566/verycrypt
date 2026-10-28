@@ -31,6 +31,30 @@ class CryptographicEngineTest {
     }
 
     @Test
+    fun testSha3_512StandardVectors() {
+        runBlocking {
+            // NIST FIPS 202 test vector for empty string
+            val emptySha3 = HashingEngine.computeSha3_512("".byteInputStream())
+            assertEquals(
+                "a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26",
+                emptySha3
+            )
+
+            // Direct text hashing should also yield the exact same SHA3-512 hash
+            val directTextResult = HashingEngine.hashTextDirectly("")
+            assertEquals(emptySha3, directTextResult.sha3_512Hex)
+
+            // Non-empty test
+            val text = "VeriCrypt Cryptographic Security"
+            val hashStream = HashingEngine.computeSha3_512(text.byteInputStream())
+            val hashBytes = HashingEngine.computeSha3_512Bytes(text.toByteArray(Charsets.UTF_8))
+            assertEquals(hashStream, hashBytes)
+            assertTrue(hashBytes.length == 128)
+            assertTrue(HashingEngine.compareHashes(hashStream, hashBytes))
+        }
+    }
+
+    @Test
     fun testHashComparison() {
         val hash = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
         val upperHash = hash.uppercase()

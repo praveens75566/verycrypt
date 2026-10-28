@@ -220,6 +220,17 @@ private fun DirectTextHashTab(
                 )
             }
 
+            if (textState.sha3_512Hex.isNotBlank()) {
+                item {
+                    MonospaceValueCard(
+                        title = "SHA3-512 (512-BIT KECCAK CHECKSUM)",
+                        value = textState.sha3_512Hex,
+                        subtitle = "Algorithm: SHA3-512 NIST FIPS 202 (128 hex characters)",
+                        testTag = "text_sha3_512_result"
+                    )
+                }
+            }
+
             textState.entropyResult?.let { entropy ->
                 item {
                     EntropyVisualizer(
@@ -247,7 +258,7 @@ private fun DirectTextHashTab(
                         OutlinedTextField(
                             value = textState.targetCompareHash,
                             onValueChange = { viewModel.updateTextCompareTarget(it) },
-                            label = { Text("Paste SHA-256 or SHA-512 target hash") },
+                            label = { Text("Paste SHA-256, SHA-512, or SHA3-512 target hash") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(8.dp)
@@ -606,9 +617,9 @@ private fun SingleFileHashTab(
         if (singleState.isHashing) {
             item {
                 ProgressCard(
-                    title = "Computing SHA-256 & SHA-512 Digests",
+                    title = "Computing SHA-256, SHA-512 & SHA3-512 Digests",
                     progress = singleState.progress,
-                    statusText = "Streaming file chunks through Java Cryptography Architecture..."
+                    statusText = "Streaming file chunks through Cryptographic Architecture..."
                 )
             }
         }
@@ -631,6 +642,17 @@ private fun SingleFileHashTab(
                         value = singleState.sha512Hex,
                         subtitle = "Algorithm: SHA-512 (512-bit standard hash)",
                         testTag = "single_sha512_result"
+                    )
+                }
+            }
+
+            if (singleState.sha3_512Hex.isNotBlank()) {
+                item {
+                    MonospaceValueCard(
+                        title = "COMPUTED SHA3-512 CHECKSUM",
+                        value = singleState.sha3_512Hex,
+                        subtitle = "Algorithm: SHA3-512 (NIST FIPS 202 512-bit Keccak)",
+                        testTag = "single_sha3_512_result"
                     )
                 }
             }
@@ -668,7 +690,7 @@ private fun SingleFileHashTab(
                         OutlinedTextField(
                             value = singleState.targetCompareHash,
                             onValueChange = { viewModel.updateTargetCompareHash(it) },
-                            label = { Text("Paste Expected Hash (SHA-256 or SHA-512)") },
+                            label = { Text("Paste Expected Hash (SHA-256, SHA-512, or SHA3-512)") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("compare_hash_input"),

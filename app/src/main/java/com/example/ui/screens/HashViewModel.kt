@@ -28,6 +28,7 @@ data class SingleHashState(
     val sizeBytes: Long = 0L,
     val sha256Hex: String = "",
     val sha512Hex: String = "",
+    val sha3_512Hex: String = "",
     val targetCompareHash: String = "",
     val isHashing: Boolean = false,
     val progress: Float = 0f,
@@ -42,6 +43,7 @@ data class TextHashState(
     val sizeBytes: Int = 0,
     val sha256Hex: String = "",
     val sha512Hex: String = "",
+    val sha3_512Hex: String = "",
     val targetCompareHash: String = "",
     val compareResult: Boolean? = null,
     val entropyResult: EntropyResult? = null
@@ -101,6 +103,7 @@ class HashViewModel(application: Application) : AndroidViewModel(application) {
                 sizeBytes = size,
                 sha256Hex = "",
                 sha512Hex = "",
+                sha3_512Hex = "",
                 progress = 0f,
                 compareResult = null,
                 error = null
@@ -118,13 +121,19 @@ class HashViewModel(application: Application) : AndroidViewModel(application) {
                 val inStream256 = context.contentResolver.openInputStream(uri)
                     ?: throw IllegalStateException("Cannot read $name")
                 val sha256 = HashingEngine.computeSha256(inStream256, size) { prog ->
-                    _singleState.update { it.copy(progress = prog * 0.5f) }
+                    _singleState.update { it.copy(progress = prog * 0.33f) }
                 }
 
                 val inStream512 = context.contentResolver.openInputStream(uri)
                     ?: throw IllegalStateException("Cannot read $name")
                 val sha512 = HashingEngine.computeSha512(inStream512, size) { prog ->
-                    _singleState.update { it.copy(progress = 0.5f + prog * 0.5f) }
+                    _singleState.update { it.copy(progress = 0.33f + prog * 0.33f) }
+                }
+
+                val inStreamSha3 = context.contentResolver.openInputStream(uri)
+                    ?: throw IllegalStateException("Cannot read $name")
+                val sha3_512 = HashingEngine.computeSha3_512(inStreamSha3, size) { prog ->
+                    _singleState.update { it.copy(progress = 0.66f + prog * 0.34f) }
                 }
 
                 // Compute Shannon Entropy from file byte stream
@@ -147,12 +156,14 @@ class HashViewModel(application: Application) : AndroidViewModel(application) {
                     it.copy(
                         sha256Hex = sha256,
                         sha512Hex = sha512,
+                        sha3_512Hex = sha3_512,
                         isHashing = false,
                         progress = 1f,
                         entropyResult = entropyRes,
                         compareResult = if (it.targetCompareHash.isNotBlank()) {
                             HashingEngine.compareHashes(sha256, it.targetCompareHash) ||
-                                    HashingEngine.compareHashes(sha512, it.targetCompareHash)
+                                    HashingEngine.compareHashes(sha512, it.targetCompareHash) ||
+                                    HashingEngine.compareHashes(sha3_512, it.targetCompareHash)
                         } else null
                     )
                 }
@@ -162,7 +173,7 @@ class HashViewModel(application: Application) : AndroidViewModel(application) {
                         action = AuditAction.HASH,
                         itemName = name,
                         status = AuditStatus.SUCCESS,
-                        details = "SHA-256 & SHA-512 computed. Size: $size B. Entropy: ${String.format(java.util.Locale.US, "%.2f", entropyRes.entropyBitsPerByte)} b/B"
+                        details = "SHA-256, SHA-512 & SHA3-512 computed. Size: $size B. Entropy: ${String.format(java.util.Locale.US, "%.2f", entropyRes.entropyBitsPerByte)} b/B"
                     )
                 )
             } catch (e: Exception) {
@@ -177,7 +188,8 @@ class HashViewModel(application: Application) : AndroidViewModel(application) {
         _singleState.update { current ->
             val match = if (target.isNotBlank()) {
                 HashingEngine.compareHashes(current.sha256Hex, target) ||
-                        HashingEngine.compareHashes(current.sha512Hex, target)
+                        HashingEngine.compareHashes(current.sha512Hex, target) ||
+                        HashingEngine.compareHashes(current.sha3_512Hex, target)
             } else null
 
             current.copy(
@@ -197,7 +209,8 @@ class HashViewModel(application: Application) : AndroidViewModel(application) {
         val entropy = EntropyEngine.calculateTextEntropy(text)
         val match = if (_textState.value.targetCompareHash.isNotBlank()) {
             HashingEngine.compareHashes(result.sha256Hex, _textState.value.targetCompareHash) ||
-                    HashingEngine.compareHashes(result.sha512Hex, _textState.value.targetCompareHash)
+                    HashingEngine.compareHashes(result.sha512Hex, _textState.value.targetCompareHash) ||
+                    HashingEngine.compareHashes(result.sha3_512Hex, _textState.value.targetCompareHash)
         } else null
 
         _textState.update {
@@ -207,6 +220,7 @@ class HashViewModel(application: Application) : AndroidViewModel(application) {
                 sizeBytes = result.sizeBytes,
                 sha256Hex = result.sha256Hex,
                 sha512Hex = result.sha512Hex,
+                sha3_512Hex = result.sha3_512Hex,
                 compareResult = match,
                 entropyResult = entropy
             )
@@ -217,7 +231,8 @@ class HashViewModel(application: Application) : AndroidViewModel(application) {
         _textState.update { current ->
             val match = if (target.isNotBlank()) {
                 HashingEngine.compareHashes(current.sha256Hex, target) ||
-                        HashingEngine.compareHashes(current.sha512Hex, target)
+                        HashingEngine.compareHashes(current.sha512Hex, target) ||
+                        HashingEngine.compareHashes(current.sha3_512Hex, target)
             } else null
             current.copy(targetCompareHash = target, compareResult = match)
         }
